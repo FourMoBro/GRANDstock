@@ -1,0 +1,4 @@
+/venv
+.env
+/neo4j_data
+/node_modules
