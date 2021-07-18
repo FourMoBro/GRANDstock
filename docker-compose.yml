@@ -23,37 +23,35 @@ services:
             - NEO4j_dbms_memory_heap_initial__size=8G
             - NEO4J_dbms_memory_heap_max__size=16G
 
-    pgdb:
-        container_name: postgres_sqldb
-        image: postgres
-        restart: always
-        ports:
-            - 5432:5432
-        environment: 
-            - POSTGRES_USER=${PGDB_USER}
-            - POSTGRES_PASSWORD=${PGDB_PASSWORD}
-            - POSTGRES_DB=${PGDB_NAME}
-
-    pgadmin:
-        container_name: postgres_sql_admin
-        image: dpage/pgadmin4
-        environment:
-            - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
-            - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
-        ports:
-        - 5050:80
-        depends_on:
-        - pgdb
-
     jupyterlab:
+        container_name: jupyter_gs
         build: ./notebooks
         ports:
             - "8888:8888"
         volumes:
             - ./notebooks:/home/jovyan/work
+        links:
+            - neo4j
         
+    
+    # js-graphql-backend:
+    #     container_name: js_graphql
+    #     build: ./jsgql-backend
+    #     ports:
+    #         - "4001:4001"
+    #     links:
+    #         - neo4j
+    #     depends_on: 
+    #         - neo4j
 
-    # rest-api:
-    # graphql-api:
-    # frontend:
+    # next-frontend:
+    #     container_name: next_react
+    #     build: ./next-frontend
+    #     ports:
+    #         - "3000:3000"
+    #     links:
+    #         - js-graphql-backend
+    #     depends_on: 
+    #         - js-graphql-backend
+        
     
