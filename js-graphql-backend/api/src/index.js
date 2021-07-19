@@ -5,8 +5,11 @@ import neo4j from 'neo4j-driver'
 import { Neo4jGraphQL } from '@neo4j/graphql'
 import dotenv from 'dotenv'
 
+import jwt from 'jsonwebtoken'
+import { compareSync, hashSync } from 'bcrypt'
+
 // set environment variables from .env
-dotenv.config()
+dotenv.config({path: '../../.env'})
 
 const app = express()
 
@@ -29,8 +32,58 @@ const driver = neo4j.driver(
  * Read more in the docs:
  * https://neo4j.com/docs/graphql-manual/current/
  */
+const resolvers = {
+  Mutation: {
+    signup: (obj, args, context, info) => {
+      args.password = hashSync(args.password, 10)
 
-const neoSchema = new Neo4jGraphQL({ typeDefs, driver })
+      const session = context.driver.session()
+
+      return session
+        .run(`
+        CREATE (u:User) SET u += $args, u.id = randomUUID()
+        RETURN u
+        `,
+          { args }
+        )
+        .then((res) => {
+          session.close()
+          const { id, username } = res.records[0].get('u').properties
+
+          return {
+            token: jwt.sign({ id, username }, process.env.JWT_SECRET, {
+              expiresIn: '30d',
+            }),
+          }
+        })
+    },
+    login: async (obj, args, context, info) => {
+      const [user] = await User.find({ where: { username: args.username } })
+
+      const { id, username, password } = user
+      if (!compareSync(args.password, password)) {
+        throw new Error('Authorization Error')
+      }
+
+      return {
+        token: jwt.sign({ id, username }, process.env.JWT_SECRET, {
+          expiresIn: '30d',
+        }),
+      }
+    },
+  },
+}
+
+const neoSchema = new Neo4jGraphQL({ 
+  typeDefs, 
+  resolvers, 
+  driver,
+  config: {
+    jwt: {
+      secret: process.env.JWT_SECRET,
+    },
+  },
+})
 
 /*
  * Create a new ApolloServer instance, serving the GraphQL schema

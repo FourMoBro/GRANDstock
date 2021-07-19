@@ -39,3 +39,11 @@ type Earnings {
     equity: Equity @relationship(type: "HAS_EARN", direction: IN)
 
 }
+type AuthToken @exclude {
+    token: String!
+}
+
+type Mutation {
+    signup(username: String!, password: String!): AuthToken
+    login(username: String!, password: String!): AuthToken
+}
