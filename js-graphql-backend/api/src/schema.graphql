@@ -2,14 +2,21 @@
 type Query {
     earningsWeekSearch(startDate: String!, endDate:String!): [EarningsWeekSearchResult] @cypher(
         statement:""" 
-        WITH apoc.static.get('finnhub.url') + '/calendar/earnings?from=' + $startDate + '&to=' + $endDate +'&token=' + apoc.static.get('finnhub.api') AS URL
-        CALL apoc.load.json(URL) YIELD value
-        UNWIND value.earningsCalendar AS earning
-        RETURN {
-            symbol: earning.symbol,
-            date: earning.date
-        }
+            WITH apoc.static.get('finnhub.url') + '/calendar/earnings?from=' + $startDate + '&to=' + $endDate +'&token=' + apoc.static.get('finnhub.api') AS URL
+            CALL apoc.load.json(URL) YIELD value
+            UNWIND value.earningsCalendar AS earning
+            RETURN {
+                symbol: earning.symbol,
+                date: earning.date
+            }
         """)
+    currentUser: User
+        @cypher(
+            statement: """
+            MATCH (u:User {id: $auth.jwt.id})
+            RETURN u
+            """
+        )
 }
 
 type EarningsWeekSearchResult {
@@ -41,6 +48,12 @@ type Earnings {
 }
 type AuthToken @exclude {
     token: String!
+}
+
+type User {
+  username: String
+  id: ID!
+  password: String! @private
 }
 
 type Mutation {

@@ -3,6 +3,7 @@ import { ApolloServer } from 'apollo-server-express'
 import express from 'express'
 import neo4j from 'neo4j-driver'
 import { Neo4jGraphQL } from '@neo4j/graphql'
+import { OGM } from '@neo4j/graphql-ogm'
 import dotenv from 'dotenv'
 
 import jwt from 'jsonwebtoken'
@@ -12,6 +13,7 @@ import { compareSync, hashSync } from 'bcrypt'
 dotenv.config({path: '../../.env'})
 
 const app = express()
+
 
 /*
  * Create a Neo4j driver instance to connect to the database
@@ -25,6 +27,13 @@ const driver = neo4j.driver(
     process.env.NEO4J_PASSWORD || 'neo4j'
   )
 )
+
+const ogm = new OGM({
+  typeDefs,
+  driver,
+})
+
+const User = ogm.model('User')
 
 /*
  * Create an executable GraphQL schema object from GraphQL type definitions
@@ -92,9 +101,10 @@ const neoSchema = new Neo4jGraphQL({
  * generated resolvers to connect to the database.
  */
 const server = new ApolloServer({
-  context: {
-    driver,
-    driverConfig: { database: process.env.NEO4J_DATABASE || 'neo4j' },
+  context: ({ req }) => {
+    return {
+      req,
+    }
   },
   schema: neoSchema.schema,
   introspection: true,
